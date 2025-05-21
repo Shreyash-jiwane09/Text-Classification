@@ -32,9 +32,9 @@ jobs:
             docker push 820242917185.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
 
   continuous-delivery:
-    executor:
-      name: machine
-      resource_class: shreyash/sentiment_analysis  # 👈 use the name you registered in CircleCI dashboard
+    machine:
+      enabled: true
+    resource_class: shreyash/sentiment_analysis  # 👈 use your registered self-hosted runner name here if custom
     steps:
       - checkout
 
