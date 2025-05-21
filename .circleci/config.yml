@@ -19,17 +19,17 @@ jobs:
       - run:
           name: Login to AWS ECR
           command: |
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 820242917185.dkr.ecr.ap-south-1.amazonaws.com
 
       - run:
           name: Build Docker image
           command: |
-            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/demo:latest .
+            docker build -t 820242917185.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest .
 
       - run:
           name: Push Docker image to ECR
           command: |
-            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/demo:latest
+            docker push 820242917185.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
 
   continuous-delivery:
     machine: true
