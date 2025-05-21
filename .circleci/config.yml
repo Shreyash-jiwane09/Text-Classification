@@ -1,55 +1,60 @@
 version: 2.1
+
 orbs:
-  aws-ecr: circleci/aws-ecr@8.2.1
   aws-cli: circleci/aws-cli@3.1.4
+
 jobs:
   continuous-integration:
-    docker:
-      - image: cimg/base:stable
-    resource_class: medium
+    machine: true
     steps:
-      - setup_remote_docker:
-          docker_layer_caching: true
+      - checkout
+      
+      - run:
+          name: Configure AWS CLI
+          command: |
+            aws configure set region $AWS_REGION
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
 
-      - aws-ecr/build-and-push-image:
-          create-repo: true
-          dockerfile: Dockerfile
-          path: .
-          platform: linux/amd64
-          push-image: true
-          region: '${AWS_REGION}'
-          repo: demo
-          registry-id: AWS_ECR_REGISTRY_ID
-          repo-scan-on-push: true
-          tag: latest
+      - run:
+          name: Login to AWS ECR
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+
+      - run:
+          name: Build Docker image
+          command: |
+            docker build -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/demo:latest .
+
+      - run:
+          name: Push Docker image to ECR
+          command: |
+            docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/demo:latest
 
   continuous-delivery:
     machine: true
-    resource_class: shreyash/sentiment_analysis
     steps:
-      - aws-cli/setup
+      - checkout
 
       - run:
-          name: auth to aws ecr
-          command: aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 820242917185.dkr.ecr.ap-south-1.amazonaws.com
-          
-          
+          name: Login to AWS ECR
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
 
       - run:
-          name: pull image from private repository
-          command: docker pull 820242917185.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
-          
-      
+          name: Pull latest Docker image
+          command: |
+            docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/demo:latest
+
       - run:
-          name: run image
-          command: docker run -d -p 8080:8080 820242917185.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
+          name: Run Docker container
+          command: |
+            docker run -d -p 8080:8080 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/demo:latest
+
 workflows:
   CICD:
     jobs:
       - continuous-integration
       - continuous-delivery:
           requires:
-          - continuous-integration
-
-
-      
+            - continuous-integration
