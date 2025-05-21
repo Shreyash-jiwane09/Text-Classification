@@ -39,17 +39,17 @@ jobs:
       - run:
           name: Login to AWS ECR
           command: |
-            aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+            aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 820242917185.dkr.ecr.ap-south-1.amazonaws.com
 
       - run:
           name: Pull latest Docker image
           command: |
-            docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/demo:latest
+            docker pull 820242917185.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
 
       - run:
           name: Run Docker container
           command: |
-            docker run -d -p 8080:8080 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/demo:latest
+            docker run -d -p 8080:8080 820242917185.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
 
 workflows:
   CICD:
