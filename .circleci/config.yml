@@ -1,15 +1,17 @@
 version: 2.1
+
 orbs:
   aws-ecr: circleci/aws-ecr@8.2.1
   aws-cli: circleci/aws-cli@3.1.4
+
 jobs:
   continuous-integration:
     docker:
       - image: cimg/base:stable
     resource_class: medium
     steps:
+      - checkout  # Always check out code if you're using it
       - setup_remote_docker:
-          
           docker_layer_caching: true
 
       - aws-ecr/build-and-push-image:
@@ -20,31 +22,30 @@ jobs:
           push-image: true
           region: '${AWS_REGION}'
           repo: demo
-          registry-id: AWS_ECR_REGISTRY_ID
+          registry-id: '${AWS_ECR_REGISTRY_ID}'
           repo-scan-on-push: true
           tag: latest
 
   continuous-delivery:
     machine: true
-    resource_class: shreyash/sentiment_analysis
+    resource_class: shreyash/sentiment_analysis  # Must be registered in CircleCI
     steps:
       - aws-cli/setup
 
       - run:
-          name: auth to aws ecr
-          command: aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 820242917185.dkr.ecr.ap-south-1.amazonaws.com
-
-          
-          
+          name: Authenticate to AWS ECR
+          command: |
+            aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 820242917185.dkr.ecr.ap-south-1.amazonaws.com
 
       - run:
-          name: pull image from private repository
-          command: docker pull 820242917185.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
-          
-      
+          name: Pull image from private ECR
+          command: |
+            docker pull ${AWS_ECR_REGISTRY_URL}.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
+
       - run:
-          name: run image
-          command: docker run -d -p 8080:8080 820242917185.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
+          name: Run image
+          command: |
+            docker run -d -p 8080:8080 ${AWS_ECR_REGISTRY_URL}.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
 
 workflows:
   CICD:
@@ -52,7 +53,4 @@ workflows:
       - continuous-integration
       - continuous-delivery:
           requires:
-          - continuous-integration
-
-
-      
+            - continuous-integration
