@@ -12,7 +12,14 @@ class DataIngestionConfig:
         self.NEW_DATA_ARTIFACTS_DIR: str = os.path.join(self.DATA_INGESTION_ARTIFACTS_DIR,DATA_INGESTION_RAW_DATA_DIR)
         self.ZIP_FILE_DIR = os.path.join(self.DATA_INGESTION_ARTIFACTS_DIR)
         self.ZIP_FILE_PATH = os.path.join(self.DATA_INGESTION_ARTIFACTS_DIR,self.ZIP_FILE_NAME)
+        self.LOCAL_DATASET_PATH = r"F:\datasets\dataset.zip"
 
+@dataclass
+class DataValidationConfig:
+     def __init__(self, raw_data_path: str, imbalance_data_path: str):
+        self.raw_data_path = raw_data_path
+        self.imbalance_data_path = imbalance_data_path
+        self.schema_file_path = os.path.join("schema", "data_schema.json")
 
     
 @dataclass
