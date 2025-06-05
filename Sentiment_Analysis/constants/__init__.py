@@ -5,8 +5,9 @@ from datetime import datetime
 # Common constants
 TIMESTAMP: str = datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 ARTIFACTS_DIR = os.path.join("artifacts", TIMESTAMP)
-BUCKET_NAME = 'sentiment_analysis_n'
+BUCKET_NAME = 'sentiment_analysis_new'
 ZIP_FILE_NAME = 'dataset.zip'
+LOCAL_DATASET_PATH = os.path.join(r"F:\datasets", ZIP_FILE_NAME)
 LABEL = 'label'
 TWEET = 'tweet'
 
