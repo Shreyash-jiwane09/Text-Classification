@@ -10,13 +10,13 @@ from sklearn.model_selection import train_test_split
 from Sentiment_Analysis.logger import logging 
 from Sentiment_Analysis.exception import CustomException
 from Sentiment_Analysis.entity.config_entity import DataTransformationConfig
-from Sentiment_Analysis.entity.artifact_entity import DataIngestionArtifacts, DataTransformationArtifacts
+from Sentiment_Analysis.entity.artifact_entity import DataValidationArtifact, DataTransformationArtifacts
 
 
 class DataTransformation:
-    def __init__(self,data_transformation_config: DataTransformationConfig,data_ingestion_artifacts:DataIngestionArtifacts):
+    def __init__(self,data_transformation_config: DataTransformationConfig,data_validation_artifacts:DataValidationArtifact):
+        self.data_validation_artifacts = data_validation_artifacts
         self.data_transformation_config = data_transformation_config
-        self.data_ingestion_artifacts = data_ingestion_artifacts
 
     
 
@@ -24,7 +24,7 @@ class DataTransformation:
 
         try:
             logging.info("Entered into the imbalance_data_cleaning function")
-            imbalance_data=pd.read_csv(self.data_ingestion_artifacts.imbalance_data_file_path)
+            imbalance_data=pd.read_csv(self.data_validation_artifacts.imbalance_data_file_path)
             imbalance_data.drop(self.data_transformation_config.ID,axis=self.data_transformation_config.AXIS , 
             inplace = self.data_transformation_config.INPLACE)
             logging.info(f"Exited the imbalance data_cleaning function and returned imbalance data {imbalance_data}")
@@ -38,7 +38,7 @@ class DataTransformation:
         
         try:
             logging.info("Entered into the raw_data_cleaning function")
-            raw_data = pd.read_csv(self.data_ingestion_artifacts.raw_data_file_path)
+            raw_data = pd.read_csv(self.data_validation_artifacts.raw_data_file_path)
             raw_data.drop(self.data_transformation_config.DROP_COLUMNS,axis = self.data_transformation_config.AXIS,
             inplace = self.data_transformation_config.INPLACE)
 
