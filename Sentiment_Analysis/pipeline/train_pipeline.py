@@ -2,6 +2,7 @@ import sys
 from Sentiment_Analysis.logger import logging
 from Sentiment_Analysis.exception import CustomException
 from Sentiment_Analysis.components.data_ingestion import DataIngestion
+from Sentiment_Analysis.components.data_validation import DataValidation
 from Sentiment_Analysis.components.data_transforamation import DataTransformation
 from Sentiment_Analysis.components.model_trainer import ModelTrainer
 from Sentiment_Analysis.components.model_evaluation import ModelEvaluation
@@ -10,14 +11,15 @@ from Sentiment_Analysis.components.model_pusher import ModelPusher
 
 
 
-from Sentiment_Analysis.entity.config_entity import DataIngestionConfig,DataTransformationConfig,ModelTrainerConfig,ModelEvaluationConfig,ModelPusherConfig
-from Sentiment_Analysis.entity.artifact_entity import DataIngestionArtifacts,DataTransformationArtifacts,ModelTrainerArtifacts,ModelEvaluationArtifacts,ModelPusherArtifacts
+from Sentiment_Analysis.entity.config_entity import DataIngestionConfig,DataValidationConfig,DataTransformationConfig,ModelTrainerConfig,ModelEvaluationConfig,ModelPusherConfig
+from Sentiment_Analysis.entity.artifact_entity import DataIngestionArtifacts,DataValidationArtifact,DataTransformationArtifacts,ModelTrainerArtifacts,ModelEvaluationArtifacts,ModelPusherArtifacts
 
 
 
 class TrainPipeline:
     def __init__(self):
         self.data_ingestion_config = DataIngestionConfig()
+        self.data_validation_config = None
         self.data_transformation_config = DataTransformationConfig()
         self.model_trainer_config = ModelTrainerConfig()
         self.model_evaluation_config = ModelEvaluationConfig()
@@ -27,7 +29,7 @@ class TrainPipeline:
     def start_data_ingestion(self) -> DataIngestionArtifacts:
         logging.info("Entered the start_data_ingestion method of TrainPipeline class")
         try:
-            logging.info("Getting the data from GCLoud Storage bucket")
+            logging.info("Pushing the data from local to GCLoud Storage bucket")
             data_ingestion = DataIngestion(data_ingestion_config = self.data_ingestion_config)
 
             data_ingestion_artifacts = data_ingestion.initiate_data_ingestion()
@@ -38,12 +40,29 @@ class TrainPipeline:
         except Exception as e:
             raise CustomException(e, sys) from e
         
+
+    def start_data_validation(self, data_ingestion_artifacts: DataIngestionArtifacts) -> DataValidationArtifact:
+        logging.info("Starting data validation")
+        try:
+            # Initialize data validation config dynamically using ingestion output paths
+            self.data_validation_config = DataValidationConfig(
+                raw_data_path=data_ingestion_artifacts.raw_data_file_path,
+                imbalance_data_path=data_ingestion_artifacts.imbalance_data_file_path,
+            )
+            data_validation = DataValidation(self.data_validation_config)
+            validation_artifacts = data_validation.initiate_data_validation()
+            logging.info("Data validation completed")
+            return validation_artifacts
+        except Exception as e:
+            raise CustomException(e, sys)
+
+        
     
-    def start_data_transformation(self, data_ingestion_artifacts = DataIngestionArtifacts) -> DataTransformationArtifacts:
+    def start_data_transformation(self, data_validation_artifacts: DataValidationArtifact) -> DataTransformationArtifacts:
         logging.info("Entered the start_data_transformation method of TrainPipeline class")
         try:
             data_transformation = DataTransformation(
-                data_ingestion_artifacts = data_ingestion_artifacts,
+                data_validation_artifacts=data_validation_artifacts,
                 data_transformation_config=self.data_transformation_config
             )
 
@@ -107,10 +126,11 @@ class TrainPipeline:
         try:
             data_ingestion_artifacts = self.start_data_ingestion()
 
-            logging.info("Exited the run_pipeline method of TrainPipeline class")
+
+            data_validation_artifacts = self.start_data_validation(data_ingestion_artifacts)
 
             data_transformation_artifacts = self.start_data_transformation(
-                data_ingestion_artifacts=data_ingestion_artifacts
+                data_validation_artifacts=data_validation_artifacts
             )
 
             model_trainer_artifacts = self.start_model_trainer(
@@ -124,8 +144,6 @@ class TrainPipeline:
             
             model_pusher_artifacts = self.start_model_pusher()
         
-
-
-        
         except Exception as e:
             raise CustomException(e, sys) from e
+        
