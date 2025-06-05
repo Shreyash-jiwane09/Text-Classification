@@ -13,7 +13,40 @@ class DataIngestion:
         self.data_ingestion_config = data_ingestion_config
         self.gcloud = GCloudSync()
 
+    def push_data_to_gcloud(self, filepath: str, filename: str = None) -> None:
+        """
+        Push data to GCP Cloud Storage bucket
+        
+        Args:
+            filepath: Complete path to the file or directory to upload
+            filename: (Optional) Name of the file in the bucket. 
+                     If not provided, uses the original filename from filepath
+        """
+        try:
+            
+            logging.info("Entered the push_data_to_gcloud method of Data ingestion class")
+            
+            
+            if filename is None:
+                # Extract just the filename if full path is provided
+                filename = os.path.basename(filepath)
+                filepath = os.path.dirname(filepath)
+            
+            self.gcloud.sync_folder_to_gcloud(
+                bucket_name=self.data_ingestion_config.BUCKET_NAME,
+                filepath=filepath,
+                filename=filename
+            )
+            
+            logging.info(f"File {filename} pushed to GCloud bucket {self.data_ingestion_config.BUCKET_NAME}")
+            logging.info("Exited the push_data_to_gcloud method of Data ingestion class")
 
+        except Exception as e:
+            raise CustomException(e, sys) from e
+    
+    
+    
+    
     def get_data_from_gcloud(self) -> None:
         try:
             logging.info("Entered the get_data_from_gcloud method of Data ingestion class")
@@ -29,6 +62,10 @@ class DataIngestion:
         
         except Exception as e:
             raise CustomException(e, sys) from e
+
+
+
+    
         
     
     def unzip_and_clean(self):
@@ -50,8 +87,21 @@ class DataIngestion:
         logging.info("Entered the initiate_data_ingestion method of Data ingestion class")
 
         try:
+            local_dataset_path = self.data_ingestion_config.LOCAL_DATASET_PATH  # Safely access from config
+            
+            # Step 1: Push local dataset.zip to GCloud if it exists
+            if os.path.exists(local_dataset_path):
+                logging.info(f"Local zip file found at {local_dataset_path}, pushing to GCloud.")
+                self.push_data_to_gcloud(
+                    filepath=os.path.dirname(local_dataset_path),
+                    filename=os.path.basename(local_dataset_path)
+            )
+            else:
+                logging.warning(f"Local zip file not found at {local_dataset_path}, skipping upload.")
+
             self.get_data_from_gcloud()
             logging.info("Fetched the data from gcloud bucket")
+        
             imbalance_data_file_path, raw_data_file_path = self.unzip_and_clean()
             logging.info("Unzipped file and split into train and valid")
 
