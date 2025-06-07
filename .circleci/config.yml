@@ -6,30 +6,35 @@ orbs:
 
 jobs:
   continuous-integration:
-    docker:
-      - image: cimg/base:stable
-    resource_class: medium
+    machine: true
+    resource_class: shreyash/txtclssrunner
     steps:
-      - checkout  # Always check out code if you're using it
+      - checkout
+      - aws-cli/setup
       - setup_remote_docker:
           docker_layer_caching: true
 
-      - aws-ecr/build-and-push-image:
-          create-repo: true
-          dockerfile: Dockerfile
-          path: .
-          platform: linux/amd64
-          push-image: true
-          region: '${AWS_REGION}'
-          repo: demo
-          registry-id: '${AWS_ECR_REGISTRY_ID}'
-          repo-scan-on-push: true
-          tag: latest
+      - run:
+          name: Build Docker Image
+          command: |
+            docker build -t textclass .
+
+      - run:
+          name: Authenticate to AWS ECR
+          command: |
+            aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 820242917185.dkr.ecr.ap-south-1.amazonaws.com
+
+      - run:
+          name: Tag and Push Docker Image to ECR
+          command: |
+            docker tag textclass:latest 820242917185.dkr.ecr.ap-south-1.amazonaws.com/textclass:latest
+            ddocker push 820242917185.dkr.ecr.ap-south-1.amazonaws.com/textclass:latest
 
   continuous-delivery:
     machine: true
-    resource_class: shreyash/sentiment_analysis  # Must be registered in CircleCI
+    resource_class: shreyash/txtclssrunner
     steps:
+      - checkout
       - aws-cli/setup
 
       - run:
@@ -38,14 +43,10 @@ jobs:
             aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 820242917185.dkr.ecr.ap-south-1.amazonaws.com
 
       - run:
-          name: Pull image from private ECR
+          name: Pull and Run Docker Image
           command: |
-            docker pull ${AWS_ECR_REGISTRY_URL}.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
-
-      - run:
-          name: Run image
-          command: |
-            docker run -d -p 8080:8080 ${AWS_ECR_REGISTRY_URL}.dkr.ecr.ap-south-1.amazonaws.com/shreyash/sentiment_analysis:latest
+            docker pull 820242917185.dkr.ecr.ap-south-1.amazonaws.com/textclass:latest
+            docker run -d -p 8080:8080 820242917185.dkr.ecr.ap-south-1.amazonaws.com/textclass:latest
 
 workflows:
   CICD:
