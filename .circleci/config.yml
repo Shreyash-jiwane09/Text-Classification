@@ -6,7 +6,8 @@ orbs:
 
 jobs:
   continuous-integration:
-    machine: true
+    docker:
+      - image: cimg/base:stable
     resource_class: shreyash/txtclssrunner
     steps:
       - checkout
@@ -28,10 +29,11 @@ jobs:
           name: Tag and Push Docker Image to ECR
           command: |
             docker tag textclass:latest 820242917185.dkr.ecr.ap-south-1.amazonaws.com/textclass:latest
-            ddocker push 820242917185.dkr.ecr.ap-south-1.amazonaws.com/textclass:latest
+            docker push 820242917185.dkr.ecr.ap-south-1.amazonaws.com/textclass:latest
 
   continuous-delivery:
-    machine: true
+    docker:
+      - image: cimg/base:stable
     resource_class: shreyash/txtclssrunner
     steps:
       - checkout
